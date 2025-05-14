@@ -63,7 +63,7 @@ export default function WalletList({ onClose }) {
               <ChevronLeft size={20} className="text-gray-700" />
             </button>
           ) : (
-            <div className="w-8" />  {/* Заглушка для центровки заголовка */}
+           <div className="w-8"></div>
           )}
           <h2 className="text-base font-semibold text-gray-900">
             {viewAll ? "Wallets" : "Connect your TON wallet"}
