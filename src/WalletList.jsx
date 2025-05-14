@@ -110,7 +110,7 @@ export default function WalletList({ onClose }) {
                 onClick={() => setViewAll(true)}
                 className="flex flex-col items-center hover:bg-gray-50 p-2 rounded-lg"
               >
-                <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full">
+                <div className="w-20 h-20 flex items-center justify-center bg-gray-200 rounded-full">
                   <QrCode size={20} className="text-gray-500" />
                 </div>
                 <span className="text-xs text-center text-gray-500">View all wallets</span>
@@ -129,7 +129,7 @@ export default function WalletList({ onClose }) {
                   <img
                     src={w.imageUrl}
                     alt={w.name}
-                    className="w-10 h-10 rounded-full"
+                    className="w-20 h-20 rounded-full"
                   />
                   <span className="text-xs text-center text-gray-900">{w.name}</span>
                   {connecting === w.name && (
