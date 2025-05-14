@@ -12,7 +12,25 @@ export default function WalletList({ onClose }) {
     connector.getWallets().then(setWallets).catch(console.error);
   }, []);
 
-  // Общая функция подключения
+  // Обновлённый Telegram-connect: сначала connector.connect, потом open
+  const handleTelegramConnect = async () => {
+    setConnecting("Telegram Wallet");
+    try {
+      // передаём jsBridgeKey для Telegram Wallet
+      const linkOrVoid = await connector.connect({
+        jsBridgeKey: "tonkeeper",            // ключ для Telegram Wallet
+        bridgeUrl: "https://bridge.tonapi.io/bridge"
+      });
+      if (typeof linkOrVoid === "string") {
+        window.open(linkOrVoid, "_blank");
+      }
+    } catch (e) {
+      console.error("Ошибка подключения Telegram Wallet:", e);
+    } finally {
+      setConnecting(null);
+    }
+  };
+
   const handleConnect = async (wallet) => {
     setConnecting(wallet.name);
     try {
@@ -28,7 +46,9 @@ export default function WalletList({ onClose }) {
         console.error("Невозможно подключиться к этому кошельку:", wallet.name);
         return;
       }
-      if (typeof linkOrVoid === "string") window.open(linkOrVoid, "_blank");
+      if (typeof linkOrVoid === "string") {
+        window.open(linkOrVoid, "_blank");
+      }
     } catch (e) {
       console.error("Ошибка подключения:", e);
     } finally {
@@ -36,16 +56,9 @@ export default function WalletList({ onClose }) {
     }
   };
 
-  // Находим объект Telegram Wallet в списке и сразу подключаем через общую функцию
-  const telegramWallet = wallets.find((w) => w.name === "Wallet in Telegram");
-  const handleTelegramConnect = () => {
-    if (telegramWallet) {
-      handleConnect(telegramWallet);
-    }
-  };
-
   const primaryNames = ["Wallet in Telegram", "Tonkeeper", "MyTonWallet", "Tonhub"];
   const primary = wallets.filter((w) => primaryNames.includes(w.name));
+  const telegramWallet = wallets.find((w) => w.name === "Wallet in Telegram");
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
@@ -77,7 +90,7 @@ export default function WalletList({ onClose }) {
             >
               <FaTelegramPlane size={20} />
               <span className="text-sm font-medium">Connect Wallet in Telegram</span>
-              {connecting === "Wallet in Telegram" && (
+              {connecting === "Telegram Wallet" && (
                 <span className="ml-2 text-xs text-gray-200">…</span>
               )}
             </button>
@@ -89,7 +102,7 @@ export default function WalletList({ onClose }) {
               <span className="flex-grow border-t border-gray-200"></span>
             </div>
 
-            {/* стартовая сетка */}
+            {/* стартовая сетка с увеличенными иконками */}
             <div className="grid grid-cols-4 gap-4">
               {primary.map((w) => (
                 <button
@@ -100,7 +113,7 @@ export default function WalletList({ onClose }) {
                   <img
                     src={w.imageUrl}
                     alt={w.name}
-                    className="w-20 h-20 rounded-full"
+                    className="w-20 h-20 rounded-full"  {/* ещё больше */}
                   />
                   <span className="text-xs text-center text-gray-900">{w.name}</span>
                 </button>
@@ -111,7 +124,7 @@ export default function WalletList({ onClose }) {
                 className="flex flex-col items-center hover:bg-gray-50 p-2 rounded-lg"
               >
                 <div className="w-20 h-20 flex items-center justify-center bg-gray-200 rounded-full">
-                  <QrCode size={20} className="text-gray-500" />
+                  <QrCode size={28} className="text-gray-500" />
                 </div>
                 <span className="text-xs text-center text-gray-500">View all wallets</span>
               </button>
