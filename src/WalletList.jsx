@@ -110,10 +110,11 @@ export default function WalletList({ onClose }) {
                   onClick={() => handleConnect(w)}
                   className="flex flex-col items-center hover:bg-gray-50 p-2 rounded-lg"
                 >
+                  {/* ещё больше */}
                   <img
                     src={w.imageUrl}
                     alt={w.name}
-                    className="w-20 h-20 rounded-full"  {/* ещё больше */}
+                    className="w-20 h-20 rounded-full"  
                   />
                   <span className="text-xs text-center text-gray-900">{w.name}</span>
                 </button>
