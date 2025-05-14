@@ -1,93 +1,150 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { connector } from "./tonConnectInstance";
-import WalletList from "./WalletList";
+import { ChevronLeft, X, QrCode } from "lucide-react";
+import { FaTelegramPlane } from "react-icons/fa";
 
-export default function WelcomeScreen() {
-  const [connected, setConnected] = useState(false);
-  const [address, setAddress] = useState("");
-  const [showWallets, setShowWallets] = useState(false);
-  const isTelegramWebApp =
-    typeof window !== "undefined" && !!window.Telegram?.WebApp;
+export default function WalletList({ onClose }) {
+  const [wallets, setWallets] = useState([]);
+  const [connecting, setConnecting] = useState(null);
+  const [viewAll, setViewAll] = useState(false);
 
   useEffect(() => {
-    const unsub = connector.onStatusChange((walletInfo) => {
-      if (walletInfo?.account?.address) {
-        setConnected(true);
-        setAddress(walletInfo.account.address);
-        setShowWallets(false); // ← прячем модалку после реального подключения
-      } else {
-        setConnected(false);
-        setAddress("");
-      }
-    });
-
-    connector.restoreConnection();
-    return () => unsub();
+    connector.getWallets().then(setWallets).catch(console.error);
   }, []);
 
-  const handleTelegramWallet = () => {
-    window.open("https://t.me/wallet/start", "_blank");
+  // Общая функция подключения
+  const handleConnect = async (wallet) => {
+    setConnecting(wallet.name);
+    try {
+      let linkOrVoid;
+      if (wallet.injected && wallet.jsBridgeKey && window[wallet.jsBridgeKey]) {
+        linkOrVoid = await connector.connect({ jsBridgeKey: wallet.jsBridgeKey });
+      } else if (wallet.universalLink) {
+        linkOrVoid = await connector.connect({
+          universalLink: wallet.universalLink,
+          bridgeUrl: wallet.bridgeUrl || "https://bridge.tonapi.io/bridge",
+        });
+      } else {
+        console.error("Невозможно подключиться к этому кошельку:", wallet.name);
+        return;
+      }
+      if (typeof linkOrVoid === "string") window.open(linkOrVoid, "_blank");
+    } catch (e) {
+      console.error("Ошибка подключения:", e);
+    } finally {
+      setConnecting(null);
+    }
   };
 
-  const handleDisconnect = async () => {
-    await connector.disconnect();
+  // Находим объект Telegram Wallet в списке и сразу подключаем через общую функцию
+  const telegramWallet = wallets.find((w) => w.name === "Wallet in Telegram");
+  const handleTelegramConnect = () => {
+    if (telegramWallet) {
+      handleConnect(telegramWallet);
+    }
   };
+
+  const primaryNames = ["Wallet in Telegram", "Tonkeeper", "MyTonWallet", "Tonhub"];
+  const primary = wallets.filter((w) => primaryNames.includes(w.name));
 
   return (
-    <div className="relative min-h-screen w-full bg-[url('/bg.gif')] bg-no-repeat bg-center bg-contain">
-      <div className="flex items-start justify-center min-h-screen pt-[600px]">
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="z-10 w-full max-w-md text-white px-4 space-y-4"
-        >
-          {!connected ? (
-            <>
-              {isTelegramWebApp && (
-                <button
-                  onClick={handleTelegramWallet}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                >
-                  Открыть Telegram Wallet
-                </button>
-              )}
-              <button
-                onClick={() => setShowWallets(true)}
-                className="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded"
-              >
-                Выбрать другой кошелёк
-              </button>
-              <p className="text-xs text-center text-gray-400">
-                ⚠️ В Telegram WebApp переходы могут открыться во внешнем
-                браузере
-              </p>
-            </>
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          {viewAll ? (
+            <button onClick={() => setViewAll(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <ChevronLeft size={20} className="text-gray-700" />
+            </button>
           ) : (
-            <>
-              <button
-                onClick={() => console.log("Играть")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Играть
-              </button>
-              <button
-                onClick={handleDisconnect}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Отключить кошелёк
-              </button>
-              <p className="text-sm text-center text-gray-300 mt-2">
-                Подключен: {address}
-              </p>
-            </>
+            <div className="w-8"></div>
           )}
-        </motion.div>
+          <h2 className="text-base font-semibold text-gray-900">
+            {viewAll ? "Wallets" : "Connect your TON wallet"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <X size={20} className="text-gray-700" />
+          </button>
+        </div>
 
-        {showWallets && (
-          <WalletList onClose={() => setShowWallets(false)} />
+        {/* BODY */}
+        {!viewAll ? (
+          <div className="px-4 py-3 space-y-4">
+            {/* Telegram Wallet */}
+            <button
+              onClick={handleTelegramConnect}
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
+            >
+              <FaTelegramPlane size={20} />
+              <span className="text-sm font-medium">Connect Wallet in Telegram</span>
+              {connecting === "Wallet in Telegram" && (
+                <span className="ml-2 text-xs text-gray-200">…</span>
+              )}
+            </button>
+
+            {/* разделитель */}
+            <div className="flex items-center">
+              <span className="flex-grow border-t border-gray-200"></span>
+              <span className="px-2 text-xs text-gray-400">Choose other application</span>
+              <span className="flex-grow border-t border-gray-200"></span>
+            </div>
+
+            {/* стартовая сетка */}
+            <div className="grid grid-cols-4 gap-4">
+              {primary.map((w) => (
+                <button
+                  key={w.name}
+                  onClick={() => handleConnect(w)}
+                  className="flex flex-col items-center hover:bg-gray-50 p-2 rounded-lg"
+                >
+                  <img
+                    src={w.imageUrl}
+                    alt={w.name}
+                    className="w-20 h-20 rounded-full"
+                  />
+                  <span className="text-xs text-center text-gray-900">{w.name}</span>
+                </button>
+              ))}
+
+              <button
+                onClick={() => setViewAll(true)}
+                className="flex flex-col items-center hover:bg-gray-50 p-2 rounded-lg"
+              >
+                <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full">
+                  <QrCode size={20} className="text-gray-500" />
+                </div>
+                <span className="text-xs text-center text-gray-500">View all wallets</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="px-4 py-3 bg-gray-50 max-h-[60vh] overflow-y-auto hide-scrollbar">
+            <div className="grid grid-cols-4 gap-4">
+              {wallets.map((w) => (
+                <button
+                  key={w.name}
+                  onClick={() => handleConnect(w)}
+                  className="flex flex-col items-center hover:bg-white p-2 rounded-lg"
+                >
+                  <img
+                    src={w.imageUrl}
+                    alt={w.name}
+                    className="w-20 h-20 rounded-full"
+                  />
+                  <span className="text-xs text-center text-gray-900">{w.name}</span>
+                  {connecting === w.name && (
+                    <span className="text-[10px] text-blue-500">Connecting…</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
+
+        {/* FOOTER */}
+        <div className="px-4 py-3 border-t text-center">
+          <span className="text-xs text-gray-400">TON Connect</span>
+        </div>
       </div>
     </div>
   );
