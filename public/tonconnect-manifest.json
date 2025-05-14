@@ -1,0 +1,12 @@
+{
+  "manifest_version": 1,
+  "name": "Posapp",
+  "description": "Подключение к кошельку через TonConnect",
+  "url": "https://peaceorshit.online",
+  "iconUrl": "https://peaceorshit.online/icon.png",
+  "bridgeUrl": "https://bridge.tonapi.io/bridge",
+  "universalLink": "https://app.tonkeeper.com/ton-connect",
+  "jsBridgeKey": "tonkeeper"
+}
+
+
